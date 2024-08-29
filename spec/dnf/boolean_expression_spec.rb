@@ -11,6 +11,10 @@ RSpec.describe Dnf::BooleanExpression do
     expect(Dnf::BooleanExpression.new('¬a ∧ (b ∨ c)', not_symbol: '¬', and_symbol: '∧', or_symbol: '∨').to_dnf).to eq('¬a ∧ b ∨ ¬a ∧ c')
   end
   
+  it 'allows multiple symbols for boolean operators' do
+    expect(Dnf::BooleanExpression.new('!a && (b || c)', not_symbol: '!', and_symbol: '&&', or_symbol: '||').to_dnf).to eq('!a && b || !a && c')
+  end
+  
   describe '#to_dnf' do
     it 'converts simple variable' do
       expect(Dnf::BooleanExpression.new('a').to_dnf).to eq('a')
