@@ -116,6 +116,10 @@ RSpec.describe Dnf::BooleanExpression do
       expect(Dnf::BooleanExpression.new('(!(a & b & c) | (!e | d)) & a').to_dnf).to eq('!a & a | !b & a | !c & a | !e & a | d & a')
     end
     
+    it 'converts expressions that have extra parentheses' do
+      expect(Dnf::BooleanExpression.new('(a) & ((b | (c)))').to_dnf).to eq('a & b | a & c')
+    end
+    
     it 'converts expressions with long variable names' do
       expect(Dnf::BooleanExpression.new('user & (cat | dog)').to_dnf).to eq('user & cat | user & dog')
     end
