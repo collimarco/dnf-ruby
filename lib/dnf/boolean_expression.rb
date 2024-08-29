@@ -1,9 +1,17 @@
 module Dnf
   class BooleanExpression
-    attr_reader :expression
+    attr_reader :expression, :config
 
-    def initialize(expression)
+    DEFAULT_CONFIG = {
+      variable_regex: /\w+/,
+      not_symbol: '!',
+      and_symbol: '&',
+      or_symbol: '|'
+    }
+
+    def initialize(expression, custom_config = {})
       @expression = expression
+      @config = DEFAULT_CONFIG.merge(custom_config)
     end
 
     def to_dnf
@@ -20,7 +28,14 @@ module Dnf
     end
 
     def tokenize(expr)
-      expr.scan(/\w+|[&|!()]/)
+      regex = Regexp.union(
+        config[:variable_regex],
+        config[:not_symbol],
+        config[:and_symbol],
+        config[:or_symbol],
+        /[()]/
+      )
+      expr.scan(regex)
     end
 
     def parse_expression(tokens)
@@ -29,7 +44,7 @@ module Dnf
 
     def parse_or(tokens)
       left = parse_and(tokens)
-      while tokens.first == '|'
+      while tokens.first == config[:or_symbol]
         tokens.shift
         right = parse_and(tokens)
         left = [:or, left, right]
@@ -39,7 +54,7 @@ module Dnf
 
     def parse_and(tokens)
       left = parse_not(tokens)
-      while tokens.first == '&'
+      while tokens.first == config[:and_symbol]
         tokens.shift
         right = parse_not(tokens)
         left = [:and, left, right]
@@ -48,7 +63,7 @@ module Dnf
     end
 
     def parse_not(tokens)
-      if tokens.first == '!'
+      if tokens.first == config[:not_symbol]
         tokens.shift
         expr = parse_primary(tokens)
         [:not, expr]
@@ -119,11 +134,11 @@ module Dnf
       when :var
         expr[1]
       when :not
-        "!#{dnf_to_string(expr[1])}"
+        "#{config[:not_symbol]}#{dnf_to_string(expr[1])}"
       when :and
-        "#{dnf_to_string(expr[1])} & #{dnf_to_string(expr[2])}"
+        "#{dnf_to_string(expr[1])} #{config[:and_symbol]} #{dnf_to_string(expr[2])}"
       when :or
-        "#{dnf_to_string(expr[1])} | #{dnf_to_string(expr[2])}"
+        "#{dnf_to_string(expr[1])} #{config[:or_symbol]} #{dnf_to_string(expr[2])}"
       end
     end
   end

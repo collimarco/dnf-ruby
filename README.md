@@ -10,10 +10,23 @@ gem 'dnf'
 
 ## Usage
 
+Basic usage:
+
 ```ruby
 expression = "(!a | !b) & c"
 boolean_expression = Dnf::BooleanExpression.new(expression)
 boolean_expression.to_dnf # => "!a & c | !b & c"
+```
+
+Config:
+
+```ruby
+Dnf::BooleanExpression.new(expression, {
+  variable_regex: /\w+/,
+  not_symbol: '!',
+  and_symbol: '&',
+  or_symbol: '|'
+})
 ```
 
 ## License
