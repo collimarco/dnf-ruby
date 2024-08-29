@@ -15,6 +15,38 @@ RSpec.describe Dnf::BooleanExpression do
     expect(Dnf::BooleanExpression.new('!a && (b || c)', not_symbol: '!', and_symbol: '&&', or_symbol: '||').to_dnf).to eq('!a && b || !a && c')
   end
   
+  describe 'validation' do
+    it 'raises an exception when the expression is empty' do
+      expect {
+        Dnf::BooleanExpression.new(' ').to_dnf
+      }.to raise_error(Dnf::ExpressionSyntaxError, 'Expression cannot be empty')
+    end
+    
+    it 'raises an exception when a token is invalid' do
+      expect {
+        Dnf::BooleanExpression.new('a & ### b').to_dnf
+      }.to raise_error(Dnf::ExpressionSyntaxError, 'Invalid token: ###')
+    end
+    
+    it 'raises an exception when the syntax is invalid (unexpected token)' do
+      expect {
+        Dnf::BooleanExpression.new('a & | b').to_dnf
+      }.to raise_error(Dnf::ExpressionSyntaxError, 'Unexpected token: & |')
+    end
+    
+    it 'raises an exception when the syntax is invalid (unexpected end)' do
+      expect {
+        Dnf::BooleanExpression.new('a &').to_dnf
+      }.to raise_error(Dnf::ExpressionSyntaxError, 'Unexpected end: &')
+    end
+    
+    it 'raises an exception when the parentheses are mismatched' do
+      expect {
+        Dnf::BooleanExpression.new('a & ((b | c)').to_dnf
+      }.to raise_error(Dnf::ExpressionSyntaxError, 'Mismatched parentheses')
+    end
+  end
+  
   describe '#to_dnf' do
     it 'converts simple variable' do
       expect(Dnf::BooleanExpression.new('a').to_dnf).to eq('a')

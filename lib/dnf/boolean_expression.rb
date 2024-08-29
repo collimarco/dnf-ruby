@@ -22,8 +22,53 @@ module Dnf
 
     private
 
+    def validate_expression(tokens)
+      raise ExpressionSyntaxError, "Expression cannot be empty" if tokens.empty?
+      validate_tokens(tokens)
+      validate_syntax(tokens)
+      validate_parentheses(tokens)
+    end
+
+    def validate_tokens(tokens)
+      valid_tokens = [
+        config[:not_symbol], config[:and_symbol], config[:or_symbol], '(', ')'
+      ]
+      tokens.each do |token|
+        next if valid_tokens.include?(token) || token.match?(/\A#{config[:variable_regex].source}\z/)
+        raise ExpressionSyntaxError, "Invalid token: #{token}"
+      end
+    end
+
+    def validate_syntax(tokens)
+      tokens.each_cons(2) do |prev, curr|
+        case prev
+        when config[:variable_regex], ')'
+          raise ExpressionSyntaxError, "Unexpected token: #{prev} #{curr}" unless curr == config[:and_symbol] || curr == config[:or_symbol] || curr == ')'
+        when config[:not_symbol]
+          raise ExpressionSyntaxError, "Unexpected token: #{prev} #{curr}" unless curr.match?(/\A#{config[:variable_regex].source}\z/) || curr == '('
+        when config[:and_symbol], config[:or_symbol], '('
+          raise ExpressionSyntaxError, "Unexpected token: #{prev} #{curr}" unless curr.match?(/\A#{config[:variable_regex].source}\z/) || curr == config[:not_symbol] || curr == '('
+        end
+      end
+      raise ExpressionSyntaxError, "Unexpected end: #{tokens.last}" unless tokens.last.match?(/\A#{config[:variable_regex].source}\z/) || tokens.last == ')'
+    end
+
+    def validate_parentheses(tokens)
+      stack = []
+      tokens.each do |token|
+        if token == '('
+          stack.push(token)
+        elsif token == ')'
+          raise ExpressionSyntaxError, "Mismatched parentheses" if stack.empty?
+          stack.pop
+        end
+      end
+      raise ExpressionSyntaxError, "Mismatched parentheses" unless stack.empty?
+    end
+
     def parse(expr)
       tokens = tokenize(expr)
+      validate_expression(tokens)
       parse_expression(tokens)
     end
 
@@ -33,7 +78,8 @@ module Dnf
         config[:not_symbol],
         config[:and_symbol],
         config[:or_symbol],
-        /[()]/
+        /[()]/,
+        /\S+/
       )
       expr.scan(regex)
     end
