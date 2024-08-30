@@ -28,6 +28,12 @@ RSpec.describe Dnf::BooleanExpression do
       }.to raise_error(Dnf::ExpressionSyntaxError, 'Invalid token: ###')
     end
     
+    it 'raises an exception when the syntax is invalid (unexpected start)' do
+      expect {
+        Dnf::BooleanExpression.new('& c').to_dnf
+      }.to raise_error(Dnf::ExpressionSyntaxError, 'Unexpected start: &')
+    end
+    
     it 'raises an exception when the syntax is invalid (unexpected token)' do
       expect {
         Dnf::BooleanExpression.new('a & | b').to_dnf

@@ -40,6 +40,7 @@ module Dnf
     end
 
     def validate_syntax(tokens)
+      raise ExpressionSyntaxError, "Unexpected start: #{tokens.first}" unless tokens.first.match?(/\A#{config[:variable_regex].source}\z/) || tokens.first == config[:not_symbol] || tokens.first == '('
       tokens.each_cons(2) do |prev, curr|
         case prev
         when config[:variable_regex], ')'
